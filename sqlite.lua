@@ -3,7 +3,7 @@ local sqlite3 = require("luasql.sqlite3")
 local M = {}
 
 function M.init()
-    os.remove("db-todua.db")
+    -- os.remove("db-todua.db")
     local env = sqlite3.sqlite3()
     local conn = env:connect("db-todua.db")
 
@@ -47,6 +47,16 @@ function M.insert(conn, done, note)
         print("Failed to insert into table:", insert_table_error)
         return 1
     end
+end
+
+function M.delete(conn, id)
+    local delete_query = "DELETE FROM notes WHERE id = " .. id .. ";"
+    conn:execute(delete_query)
+end
+
+function M.finish(conn, id)
+    local finish_query = "UPDATE notes SET done = 1 WHERE id = " .. id .. ";"
+    conn:execute(finish_query)
 end
 
 function M.select_all(conn)
