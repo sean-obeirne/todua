@@ -1,24 +1,22 @@
-local db = require('sqlite')
-local env, conn = db.init()
-db.create_table(conn)
+local DB = require('sqlite')
+local env, conn = DB.init()
+DB.create_table(conn)
 
 local function parse_record(row)
-    print(row.id)
     local status = "\u{2718}"
     if row.done == 1 then status = "\u{2714}" end
-    io.write("  [ " .. status .. " ]    " .. row.note)
-    print(row.note)
+    io.write("  [ " .. status .. " ]    " .. row.note .. "\n")
 end
 
 local function view_notes()
-    results = db.select_all(conn)
-    for row in results do
+    local results = DB.select_all(conn)
+    for _, row in pairs(results) do
         parse_record(row)
     end
 end
 
-local function add_notes()
-    print("We are adding notes!")
+local function add_notes(done, note)
+    DB.insert(conn, done, note)
 end
 
 local function delete_notes()
@@ -27,6 +25,9 @@ end
 
 
 local function main()
+    -- DB.insert(true, "done")
+    -- DB.insert(false, "stinky2")
+    add_notes(false, "laundry")
     local continue = true
     while continue do
         print("Welcome!")
@@ -36,13 +37,15 @@ local function main()
         print("  (q) to quit")
 
         io.write("What would you like to do? ")
-        action = io.read()
+        local action = io.read()
 
         if action == "v" then
             view_notes()
         elseif action == "a" then
-            add_notes()
+            io.write("Note for new task: ")
+            add_notes(false, io.read())
         elseif action == "d" then
+            io.write("Note for task to delete: ")
             delete_notes()
         elseif action == "q" then
             continue = false

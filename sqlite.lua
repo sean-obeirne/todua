@@ -3,6 +3,7 @@ local sqlite3 = require("luasql.sqlite3")
 local M = {}
 
 function M.init()
+    os.remove("db-todua.db")
     local env = sqlite3.sqlite3()
     local conn = env:connect("db-todua.db")
 
@@ -27,22 +28,24 @@ function M.create_table(conn)
     local create_table_result, create_table_error = conn:execute(create_table_query)
     if not create_table_result then
         print("Failed to create table:", create_table_error)
-        return
+        return 1
     end
-    
+
 end
 
-function M.insert(conn, id, done, note)
+function M.insert(conn, done, note)
 
-    local insert_query = [[
-        INSERT INTO notes (id, done, note)
-        VALUES (1, 0, 'Hello Mikayla');
-    ]]
+    local done_int = done and 1 or 0
+
+    local insert_query = string.format([[
+        INSERT INTO notes (done, note)
+        VALUES (%d, '%s');
+    ]], done_int, note)
 
     local insert_table_result, insert_table_error = conn:execute(insert_query)
     if not insert_table_result then
         print("Failed to insert into table:", insert_table_error)
-        return
+        return 1
     end
 end
 
@@ -50,12 +53,13 @@ function M.select_all(conn)
     local select_query = "SELECT * FROM notes;"
 
     local cursor = conn:execute(select_query)
-    local row = cursor:fetch({}, "a")
+
 
     local results = {}
 
-    while row do
-        row = cursor:fetch(row, "a")
+    while true do
+        local row = cursor:fetch({}, "a")
+        if not row then break end
         table.insert(results, row)
     end
 
