@@ -3,16 +3,12 @@ local M = {}
 local DB = require('todua.db')
 DB.init()
 DB.create_table()
--- print("Table created!")
-DB.insert(false, "helloo")
-DB.insert(false, "World!")
--- print("insert done")
-print(DB.select_all()[0])
--- print("selected")
-local todua_popup
 
 local function view_notes(draw_ids)
     local results = DB.select_all()
+    table.sort(results, function(a, b)
+        return a.done < b.done
+        end)
     local todo_table = {}
     local size = 0
     local longest = 0
@@ -42,26 +38,33 @@ local function add_note()
 end
 
 local function finish_note()
-    -- view_notes(true)
+    M.todua_popup(true)
+    vim.cmd('redraw')
     local note = vim.fn.input("Note to finish: ")
-    DB.finish(note)
-    M.todua_popup()
+    if note ~= "" then
+        DB.finish(note)
+    end
+    M.todua_popup(false)
 end
 
 local function delete_note()
-    -- view_notes(true)
+    M.todua_popup(true)
+    vim.cmd('redraw')
     local note = vim.fn.input("Note to delete: ")
     DB.delete(note)
-    M.todua_popup()
+    M.todua_popup(false)
+end
+
+local function quit()
+    DB.close()
+    vim.api.nvim_win_close(0, true)
 end
 
 
-function M.todua_popup()
-    -- print(view_notes(false))
-
-
-    local todo_table, size, longest = view_notes(false)
-    local commands = "(a)dd (d)elete (q)uit (f)inish"
+function M.todua_popup(show_numbers)
+    show_numbers = show_numbers or false
+    local todo_table, size, longest = view_notes(show_numbers)
+    local commands = "(a)dd (f)inish (d)elete (q)uit"
     table.insert(todo_table, commands)
 
     -- M.buf = vim.api.nvim_create_buf(false, true)
@@ -103,15 +106,17 @@ function M.todua_popup()
         M.win = vim.api.nvim_open_win(M.buf, true, opts)
     end
 
-    vim.api.nvim_buf_set_keymap(M.buf, 'n', 'q', ':q<CR>', { noremap = true, silent = true })
+    vim.api.nvim_buf_set_keymap(M.buf, 'n', 'q', '', { noremap = true, silent = true,
+        nowait = true, callback = quit
+    })
     vim.api.nvim_buf_set_keymap(M.buf, 'n', 'a', '', { noremap = true, silent = true,
-        callback = add_note
+        nowait = true, callback = add_note
     })
     vim.api.nvim_buf_set_keymap(M.buf, 'n', 'f', '', { noremap = true, silent = true,
-        callback = finish_note
+        nowait = true, callback = finish_note
     })
     vim.api.nvim_buf_set_keymap(M.buf, 'n', 'd', '', { noremap = true, silent = true,
-        callback = delete_note
+        nowait = true, callback = delete_note
     })
 end
 

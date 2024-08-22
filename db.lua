@@ -3,7 +3,7 @@ local sqlite = require("sqlite")
 local M = {}
 
 function M.init()
-    os.remove("todua.db")
+    -- os.remove("todua.db")
     M.db = sqlite.new("todua.db")
     if not M.db then
         error("Failed to connect to the database.")
@@ -13,13 +13,10 @@ function M.init()
     if not success then
         error("Failed to open DB connection: " .. err)
     end
-
-    print("Connected to the database.")
 end
 
 
 function M.create_table()
-    print("Creating table!")
     local create_table_query = [[
     CREATE TABLE IF NOT EXISTS notes(
         id INTEGER PRIMARY KEY,
@@ -66,11 +63,12 @@ function M.select_all()
     local select_query = "SELECT * FROM notes;"
     local rows = M.db:eval(select_query)
 
-    if not rows then
-        error("Failed to select *")
+    local results = {}
+
+    if not rows or type(rows) ~= "table" then
+        return results
     end
 
-    local results = {}
     for _, note in pairs(rows) do
         table.insert(results, note)
     end
@@ -80,7 +78,6 @@ end
 
 function M.close()
     M.db:close()
-    print("Database closed")
 end
 
 return M
