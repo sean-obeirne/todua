@@ -5,7 +5,7 @@ local ORDER_I = 1
 
 function M.init()
     -- os.remove("todua.db")
-    M.db = sqlite.new("todua.db")
+    M.db = sqlite.new("~/.config/nvim/lua/todua/todua.db")
     if not M.db then
         error("Failed to connect to the database.")
     end
@@ -76,6 +76,14 @@ end
 function M.finish(id)
     local finish_query = "UPDATE notes SET done = 1 WHERE id = " .. id .. ";"
     local success, err = M.db:eval(finish_query)
+    if not success then
+        error("Failed to update table: ", err)
+    end
+end
+
+function M.unfinish(id)
+    local unfinish_query = "UPDATE notes SET done = 0 WHERE id = " .. id .. ";"
+    local success, err = M.db:eval(unfinish_query)
     if not success then
         error("Failed to update table: ", err)
     end

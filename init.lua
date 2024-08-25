@@ -1,8 +1,10 @@
 local M = {}
-
 local DB = require('todua.db')
-DB.init()
-DB.create_table()
+
+function M.init()
+    DB.init()
+    DB.create_table()
+end
 
 local function view_notes(draw_ids)
     local results = DB.select_all()
@@ -45,6 +47,16 @@ local function add_note()
         DB.insert(false, note)
     end
     M.todua_popup()
+end
+
+local function unfinish_note()
+    M.todua_popup(true)
+    vim.cmd('redraw')
+    local note = vim.fn.input("Note to unfinish: ")
+    if #note > 0 then
+        DB.unfinish(note)
+    end
+    M.todua_popup(false)
 end
 
 local function finish_note()
@@ -104,7 +116,7 @@ end
 function M.todua_popup(show_numbers)
     show_numbers = show_numbers or false
     local todo_table, size, longest = view_notes(show_numbers)
-    local commands = "(a)dd (f)inish (k)up (j)down (d)elete (q)uit"
+    local commands = "(a)dd (u)n(f)inish (k)up (j)down (d)elete (q)uit"
     table.insert(todo_table, commands)
 
     -- M.buf = vim.api.nvim_create_buf(false, true)
@@ -128,7 +140,7 @@ function M.todua_popup(show_numbers)
     local opts = {
         style = "minimal",
         relative = "editor",
-        width = math.max(math.min(longest, 80), 44),
+        width = math.max(math.min(longest, 80), 48),
         height = size + 1,
         col = vim.o.columns,
         -- col = 15,
@@ -153,6 +165,9 @@ function M.todua_popup(show_numbers)
     })
     vim.api.nvim_buf_set_keymap(M.buf, 'n', 'f', '', { noremap = true, silent = true,
         nowait = true, callback = finish_note
+    })
+    vim.api.nvim_buf_set_keymap(M.buf, 'n', 'u', '', { noremap = true, silent = true,
+        nowait = true, callback = unfinish_note
     })
     vim.api.nvim_buf_set_keymap(M.buf, 'n', 'd', '', { noremap = true, silent = true,
         nowait = true, callback = delete_note
