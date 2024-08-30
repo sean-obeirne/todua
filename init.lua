@@ -24,13 +24,13 @@ local function view_notes(draw_ids)
             record = record .. row.id .. " "
         end
         if not is_header then
-            record = record .. "[ "
+            record = record .. ""
             if row.done == 1 then
                 record = record .. "\u{2714}"
             else
-                record = record .. "\u{2718}"
+                record = record .. "\u{1F785}"
             end
-            record = record .. " ]   "
+            record = record .. "   "
         end
         record = record .. row.note
         -- record = record .. " " .. row.order_index
