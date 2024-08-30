@@ -51,7 +51,7 @@ function M.insert(done, note)
         error("Failed to insert into table: ", err)
     end
     ORDER_I = ORDER_I + 1
-    print(ORDER_I)
+    return ORDER_I - 1 -- return order index of created note
 end
 
 function M.delete(id)
@@ -99,7 +99,6 @@ end
 
 function M.move_down(id)
     local current_order = M.db:eval(string.format("SELECT order_index FROM notes WHERE id = %d;", id))[1].order_index
-    print(current_order)
     if current_order < ORDER_I - 1 then
         M.db:eval(string.format("UPDATE notes SET order_index = order_index - 1 WHERE order_index = %d + 1;", current_order))
         M.db:eval(string.format("UPDATE notes SET order_index = order_index + 1 WHERE id = %d;", id))

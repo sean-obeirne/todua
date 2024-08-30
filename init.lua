@@ -6,15 +6,25 @@ function M.init()
     DB.create_table()
 end
 
-local function view_notes(draw_ids)
-    local results = DB.select_all()
-    table.sort(results, function(a, b)
+local ordered_notes
+
+local function get_notes()
+    ordered_notes = DB.select_all()
+    table.sort(ordered_notes, function(a, b)
         return a.order_index < b.order_index
-        end)
+    end)
+end
+
+local function get_cur_note()
+    return ordered_notes[vim.fn.line('.')]
+end
+
+local function view_notes(draw_ids)
+    get_notes()
     local todo_table = {}
     local size = 0
     local longest = 0
-    for _, row in pairs(results) do
+    for _, row in pairs(ordered_notes) do
         local record = ""
         local is_header = row.note == string.upper(row.note)
         if not is_header then
@@ -42,41 +52,39 @@ local function view_notes(draw_ids)
 end
 
 local function add_note()
-    local note = vim.fn.input("Note for new task: ")
-    if #note > 0 then
-        DB.insert(false, note)
+    local new_note = vim.fn.input("Note for new task: ")
+    if #new_note > 0 then
+        i = DB.insert(false, new_note)
+        M.todua_popup()
+        vim.fn.cursor(i, 1)
     end
-    M.todua_popup()
 end
 
 local function unfinish_note()
-    M.todua_popup(true)
-    vim.cmd('redraw')
-    local note = vim.fn.input("Note to unfinish: ")
-    if #note > 0 then
-        DB.unfinish(note)
+    local note = get_cur_note()
+    if note then
+        DB.unfinish(note.id)
+        M.todua_popup()
+        vim.fn.cursor(note.order_index, 1)
     end
-    M.todua_popup(false)
 end
 
 local function finish_note()
-    M.todua_popup(true)
-    vim.cmd('redraw')
-    local note = vim.fn.input("Note to finish: ")
-    if #note > 0 then
-        DB.finish(note)
+    local note = get_cur_note()
+    if note then
+        DB.finish(note.id)
+        M.todua_popup()
+        vim.fn.cursor(note.order_index, 1)
     end
-    M.todua_popup(false)
 end
 
 local function delete_note()
-    M.todua_popup(true)
-    vim.cmd('redraw')
-    local note = vim.fn.input("Note to delete: ")
-    if #note > 0 then
-        DB.delete(note)
+    local note = get_cur_note()
+    if note then
+        DB.delete(note.id)
+        M.todua_popup()
+        vim.fn.cursor(note.order_index, 1)
     end
-    M.todua_popup(false)
 end
 
 local function quit()
@@ -85,35 +93,23 @@ local function quit()
 end
 
 local function move_up()
-    M.todua_popup(true)
-    vim.cmd('redraw')
-    local note = vim.fn.input("Note to move up: ")
-    if #note > 0 then
-        local loops = vim.fn.input("Up how many spots?: ")
-        for j = 1, loops do
-            DB.move_up(note)
-        end
-        -- if vim.fn.line('.') > 1 and vim.fn.line('.') ~= vim.fn.line('$') then
-        -- end
+    local note = get_cur_note()
+    if note then
+        DB.move_up(note.id)
+        M.todua_popup()
+        vim.fn.cursor(note.order_index - 1, 1)
     end
-    M.todua_popup(false)
 end
 local function move_down()
-    M.todua_popup(true)
-    vim.cmd('redraw')
-    local note = vim.fn.input("Note to move down: ")
-    if #note > 0 then
-        local loops = vim.fn.input("Down how many spots?: ")
-        for j = 1, loops do
-            DB.move_down(note)
-        end
-        -- if vim.fn.line('.') > 1 and vim.fn.line('.') ~= vim.fn.line('$') then
-        -- end
+    local note = get_cur_note()
+    if note and note.order_index < #ordered_notes then
+        DB.move_down(note.id)
+        M.todua_popup()
+        vim.fn.cursor(note.order_index + 1, 1)
     end
-    M.todua_popup(false)
 end
 
-function M.todua_popup(show_numbers)
+function M.todua_popup()
     show_numbers = show_numbers or false
     local todo_table, size, longest = view_notes(show_numbers)
     local commands = "(a)dd (u)n(f)inish (k)up (j)down (d)elete (q)uit"
