@@ -54,6 +54,14 @@ function M.insert(done, note)
     return ORDER_I - 1 -- return order index of created note
 end
 
+function M.edit(id, new_note)
+    local edit_query = "UPDATE notes SET note = '" .. new_note .. "' WHERE id = " .. id .. ";"
+    local success, err = M.db:eval(edit_query)
+    if not success then
+        error("Failed to update table: ", err)
+    end
+end
+
 function M.delete(id)
     local entry = M.db:eval("SELECT order_index FROM NOTES WHERE id = " .. id .. ";")
     if not entry or type(entry) ~= "table" or #entry == 0 then

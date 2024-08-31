@@ -60,6 +60,18 @@ local function add_note()
     end
 end
 
+local function edit_note()
+    local note = get_cur_note()
+    if note then
+        local new_note = vim.fn.input("Note for new task: ")
+        if #new_note > 0 then
+            DB.edit(note.id, new_note)
+        end
+        M.todua_popup()
+        vim.fn.cursor(note.order_index, 1)
+    end
+end
+
 local function unfinish_note()
     local note = get_cur_note()
     if note then
@@ -112,7 +124,7 @@ end
 function M.todua_popup()
     show_numbers = show_numbers or false
     local todo_table, size, longest = view_notes(show_numbers)
-    local commands = "(a)dd (u)n(f)inish (k)up (j)down (d)elete (q)uit"
+    local commands = "(a)dd (e)dit (u)n(f)inish (k)up (j)down (d)elete (q)uit"
     table.insert(todo_table, commands)
 
     -- M.buf = vim.api.nvim_create_buf(false, true)
@@ -136,7 +148,7 @@ function M.todua_popup()
     local opts = {
         style = "minimal",
         relative = "editor",
-        width = math.max(math.min(longest, 80), 48),
+        width = math.max(math.min(longest, 80), 55),
         height = size + 1,
         col = vim.o.columns,
         -- col = 15,
@@ -158,6 +170,9 @@ function M.todua_popup()
     })
     vim.api.nvim_buf_set_keymap(M.buf, 'n', 'a', '', { noremap = true, silent = true,
         nowait = true, callback = add_note
+    })
+    vim.api.nvim_buf_set_keymap(M.buf, 'n', 'e', '', { noremap = true, silent = true,
+        nowait = true, callback = edit_note
     })
     vim.api.nvim_buf_set_keymap(M.buf, 'n', 'f', '', { noremap = true, silent = true,
         nowait = true, callback = finish_note
