@@ -8,6 +8,17 @@ end
 
 local ordered_notes
 
+local function remove_leading_whitespace(s)
+    local i = 1
+    local leading_whitespace = ""
+    while s:sub(1, 1) == " " do
+        s = s:sub(2, #s)
+        leading_whitespace = leading_whitespace .. " "
+        i = i + 1
+    end
+    return leading_whitespace, s
+end
+
 local function get_notes()
     ordered_notes = DB.select_all()
     table.sort(ordered_notes, function(a, b)
@@ -34,7 +45,10 @@ local function view_notes(draw_ids)
             record = record .. row.id .. " "
         end
         if not is_header then
-            record = record .. ""
+            local leading_whitespace, new_string = remove_leading_whitespace(row.note)
+            record = record .. leading_whitespace
+            row.note = new_string
+            -- record = record .. ""
             if row.done == 1 then
                 record = record .. "\u{2714}"
             else
@@ -54,7 +68,7 @@ end
 local function add_note()
     local new_note = vim.fn.input("Note for new task: ")
     if #new_note > 0 then
-        i = DB.insert(false, new_note)
+        local i = DB.insert(false, new_note)
         M.todua_popup()
         vim.fn.cursor(i, 1)
     end
@@ -122,9 +136,8 @@ local function move_down()
 end
 
 function M.todua_popup()
-    show_numbers = show_numbers or false
-    local todo_table, size, longest = view_notes(show_numbers)
-    local commands = "(a)dd (e)dit (u)n(f)inish (k)up (j)down (d)elete (q)uit"
+    local todo_table, size, longest = view_notes()
+    local commands = " (a)dd (e)dit (u)n(f)inish (k)up (j)down (d)elete (q)uit "
     table.insert(todo_table, commands)
 
     -- M.buf = vim.api.nvim_create_buf(false, true)
@@ -148,7 +161,7 @@ function M.todua_popup()
     local opts = {
         style = "minimal",
         relative = "editor",
-        width = math.max(math.min(longest, 80), 55),
+        width = math.max(math.min(longest, 80), #commands),
         height = size + 1,
         col = vim.o.columns,
         -- col = 15,
