@@ -38,10 +38,6 @@ local function view_notes(draw_ids)
     local longest = 0
     for _, row in pairs(ordered_notes) do
         local record = ""
-        -- print(row.priority)
-        -- if row.priority == 0 then
-            -- vim.api.nvim_buf_add_highlight(M.buf, -1, "String", 2, 0, -1)
-        -- end
         local is_header = row.note == string.upper(row.note)
         if not is_header then
             record = "  "
@@ -66,25 +62,8 @@ local function view_notes(draw_ids)
         local hl_group
 
         hl_group = priority_highlights[row.priority] or "Normal"
+
         table.insert(todo_table, {text = record, hl = hl_group})
-
-
-
-        -- table.insert(todo_table, record)
-
-
-        -- vim.api.nvim_buf_add_highlight(M.buf, -1, highlight_group, _ - 1, 0, -1)
-
-
-        -- record = record .. " " .. row.order_index
-        -- After inserting the line, apply the highlight
-        -- if row.priority == nil then
-            -- vim.api.nvim_buf_add_highlight(M.buf, -1, "String", _ - 1, 0, -1)
-        -- elseif row.priority == 1 then
-            -- vim.api.nvim_buf_add_highlight(M.buf, -1, "WarningMsg", _ - 1, 0, -1)
-        -- elseif row.priority == 2 then
-            -- vim.api.nvim_buf_add_highlight(M.buf, -1, "ErrorMsg", _ - 1, 0, -1)
-        -- end
 
         longest = math.max(longest, string.len(record))
         size = size + 1
@@ -176,7 +155,6 @@ function M.todua_popup()
     local commands = " (a)dd (e)dit (u)n(f)inish (k)up (j)down (d)elete (q)uit "
     table.insert(todo_table, {text = commands, hl = "Normal"})
 
-    -- M.buf = vim.api.nvim_create_buf(false, true)
     -- If the buffer doesn't exist or is invalid, create a new one
     if not M.buf or not vim.api.nvim_buf_is_valid(M.buf) then
         M.buf = vim.api.nvim_create_buf(false, true)
