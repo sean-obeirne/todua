@@ -23,14 +23,24 @@ function M.init()
     end
 end
 
+function M.hacky_query()
+    local query
+    -- query = "UPDATE notes SET priority = 1 WHERE priority IS NULL"
+    query = ""
+    if query ~= "" then
+        M.db:eval(query)
+    end
+end
 
 function M.create_table()
+    M.hacky_query()
     local create_table_query = [[
     CREATE TABLE IF NOT EXISTS notes(
         id INTEGER PRIMARY KEY,
         done INTEGER,
         note TEXT,
-        order_index INTEGER
+        order_index INTEGER,
+        priority INTEGER
     );
     ]]
     local success, err = M.db:eval(create_table_query)
@@ -43,9 +53,9 @@ function M.insert(done, note)
     local done_int = done and 1 or 0
 
     local insert_query = string.format([[
-        INSERT INTO notes (done, note, order_index)
-        VALUES (%d, '%s', %d);
-    ]], done_int, note, ORDER_I)
+        INSERT INTO notes (done, note, order_index, priority)
+        VALUES (%d, '%s', %d, %d);
+    ]], done_int, note, ORDER_I, 0)
     local success, err = M.db:eval(insert_query)
     if not success then
         error("Failed to insert into table: ", err)
@@ -81,8 +91,16 @@ function M.delete(id)
     end
 end
 
+function M.set_priority(id, priority)
+    local priority_query = "UPDATE notes SET priority = " .. priority .. " WHERE id = " .. id .. " AND NOT priority = 5;"
+    local success, err = M.db:eval(priority_query)
+    if not success then
+        error("Failed to update table: ", err)
+    end
+end
+
 function M.finish(id)
-    local finish_query = "UPDATE notes SET done = 1 WHERE id = " .. id .. ";"
+    local finish_query = "UPDATE notes SET done = 1, priority = 5 WHERE id = " .. id .. ";"
     local success, err = M.db:eval(finish_query)
     if not success then
         error("Failed to update table: ", err)
@@ -90,7 +108,7 @@ function M.finish(id)
 end
 
 function M.unfinish(id)
-    local unfinish_query = "UPDATE notes SET done = 0 WHERE id = " .. id .. ";"
+    local unfinish_query = "UPDATE notes SET done = 0, priority = 0 WHERE id = " .. id .. ";"
     local success, err = M.db:eval(unfinish_query)
     if not success then
         error("Failed to update table: ", err)

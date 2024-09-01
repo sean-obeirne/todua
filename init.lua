@@ -7,6 +7,7 @@ function M.init()
 end
 
 local ordered_notes
+local priority_highlights = {"Normal", "String", "WarningMsg", "ErrorMsg", "Comment"}
 
 local function remove_leading_whitespace(s)
     local i = 1
@@ -37,6 +38,10 @@ local function view_notes(draw_ids)
     local longest = 0
     for _, row in pairs(ordered_notes) do
         local record = ""
+        -- print(row.priority)
+        -- if row.priority == 0 then
+            -- vim.api.nvim_buf_add_highlight(M.buf, -1, "String", 2, 0, -1)
+        -- end
         local is_header = row.note == string.upper(row.note)
         if not is_header then
             record = "  "
@@ -57,9 +62,31 @@ local function view_notes(draw_ids)
             record = record .. "   "
         end
         record = record .. row.note
+
+        local hl_group
+
+        hl_group = priority_highlights[row.priority] or "Normal"
+        table.insert(todo_table, {text = record, hl = hl_group})
+
+
+
+        -- table.insert(todo_table, record)
+
+
+        -- vim.api.nvim_buf_add_highlight(M.buf, -1, highlight_group, _ - 1, 0, -1)
+
+
         -- record = record .. " " .. row.order_index
+        -- After inserting the line, apply the highlight
+        -- if row.priority == nil then
+            -- vim.api.nvim_buf_add_highlight(M.buf, -1, "String", _ - 1, 0, -1)
+        -- elseif row.priority == 1 then
+            -- vim.api.nvim_buf_add_highlight(M.buf, -1, "WarningMsg", _ - 1, 0, -1)
+        -- elseif row.priority == 2 then
+            -- vim.api.nvim_buf_add_highlight(M.buf, -1, "ErrorMsg", _ - 1, 0, -1)
+        -- end
+
         longest = math.max(longest, string.len(record))
-        table.insert(todo_table, record)
         size = size + 1
     end
     return todo_table, size, longest
@@ -77,10 +104,19 @@ end
 local function edit_note()
     local note = get_cur_note()
     if note then
-        local new_note = vim.fn.input("Note for new task: ")
+        local new_note = vim.fn.input("New note for task: ")
         if #new_note > 0 then
             DB.edit(note.id, new_note)
         end
+        M.todua_popup()
+        vim.fn.cursor(note.order_index, 1)
+    end
+end
+
+local function set_priority(priority)
+    local note = get_cur_note()
+    if note and priority > 0 and priority <= 4 then
+        DB.set_priority(note.id, priority)
         M.todua_popup()
         vim.fn.cursor(note.order_index, 1)
     end
@@ -138,7 +174,7 @@ end
 function M.todua_popup()
     local todo_table, size, longest = view_notes()
     local commands = " (a)dd (e)dit (u)n(f)inish (k)up (j)down (d)elete (q)uit "
-    table.insert(todo_table, commands)
+    table.insert(todo_table, {text = commands, hl = "Normal"})
 
     -- M.buf = vim.api.nvim_create_buf(false, true)
     -- If the buffer doesn't exist or is invalid, create a new one
@@ -151,7 +187,13 @@ function M.todua_popup()
         vim.api.nvim_buf_set_lines(M.buf, 0, -1, false, {})
     end
 
-    vim.api.nvim_buf_set_lines(M.buf, 0, -1, false, todo_table)
+    -- Set lines and apply highlights
+    for i, entry in ipairs(todo_table) do
+        -- Set the line in the buffer
+        vim.api.nvim_buf_set_lines(M.buf, i - 1, i, false, {entry.text})
+        -- Apply the corresponding highlight
+        vim.api.nvim_buf_add_highlight(M.buf, -1, entry.hl, i - 1, 0, -1)
+    end
 
     -- Set the buffer as unmodifiable, scratch, and read-only
     vim.api.nvim_buf_set_option(M.buf, 'modifiable', false)
@@ -178,30 +220,29 @@ function M.todua_popup()
         M.win = vim.api.nvim_open_win(M.buf, true, opts)
     end
 
-    vim.api.nvim_buf_set_keymap(M.buf, 'n', 'q', '', { noremap = true, silent = true,
-        nowait = true, callback = quit
-    })
-    vim.api.nvim_buf_set_keymap(M.buf, 'n', 'a', '', { noremap = true, silent = true,
-        nowait = true, callback = add_note
-    })
-    vim.api.nvim_buf_set_keymap(M.buf, 'n', 'e', '', { noremap = true, silent = true,
-        nowait = true, callback = edit_note
-    })
-    vim.api.nvim_buf_set_keymap(M.buf, 'n', 'f', '', { noremap = true, silent = true,
-        nowait = true, callback = finish_note
-    })
-    vim.api.nvim_buf_set_keymap(M.buf, 'n', 'u', '', { noremap = true, silent = true,
-        nowait = true, callback = unfinish_note
-    })
-    vim.api.nvim_buf_set_keymap(M.buf, 'n', 'd', '', { noremap = true, silent = true,
-        nowait = true, callback = delete_note
-    })
-    vim.api.nvim_buf_set_keymap(M.buf, 'n', 'k', '', { noremap = true, silent = true,
-        nowait = true, callback = move_up
-    })
-    vim.api.nvim_buf_set_keymap(M.buf, 'n', 'j', '', { noremap = true, silent = true,
-        nowait = true, callback = move_down
-    })
+    local keymaps = {
+        q = quit,
+        a = add_note,
+        e = edit_note,
+        f = finish_note,
+        u = unfinish_note,
+        d = delete_note,
+        k = move_up,
+        j = move_down,
+        ['1'] = function() set_priority(1) end,
+        ['2'] = function() set_priority(2) end,
+        ['3'] = function() set_priority(3) end,
+        ['4'] = function() set_priority(4) end,
+    }
+
+    for key, action in pairs(keymaps) do
+        vim.api.nvim_buf_set_keymap(M.buf, 'n', key, '', {
+            noremap = true,
+            silent = true,
+            nowait = true,
+            callback = action
+        })
+    end
 end
 
 vim.api.nvim_create_user_command('Todua', M.todua_popup, {})
