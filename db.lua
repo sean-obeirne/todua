@@ -92,7 +92,7 @@ function M.delete(id)
 end
 
 function M.set_priority(id, priority)
-    local priority_query = "UPDATE notes SET priority = " .. priority .. " WHERE id = " .. id .. " AND NOT priority = 5;"
+    local priority_query = "UPDATE notes SET priority = " .. priority .. " WHERE id = " .. id .. " AND NOT done = 1;"
     local success, err = M.db:eval(priority_query)
     if not success then
         error("Failed to update table: ", err)
@@ -100,7 +100,7 @@ function M.set_priority(id, priority)
 end
 
 function M.finish(id)
-    local finish_query = "UPDATE notes SET done = 1, priority = 5 WHERE id = " .. id .. ";"
+    local finish_query = "UPDATE notes SET done = 1 WHERE id = " .. id .. ";"
     local success, err = M.db:eval(finish_query)
     if not success then
         error("Failed to update table: ", err)
@@ -108,7 +108,7 @@ function M.finish(id)
 end
 
 function M.unfinish(id)
-    local unfinish_query = "UPDATE notes SET done = 0, priority = 0 WHERE id = " .. id .. ";"
+    local unfinish_query = "UPDATE notes SET done = 0 WHERE id = " .. id .. ";"
     local success, err = M.db:eval(unfinish_query)
     if not success then
         error("Failed to update table: ", err)

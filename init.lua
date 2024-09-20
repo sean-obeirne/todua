@@ -61,7 +61,11 @@ local function view_notes(draw_ids)
 
         local hl_group
 
-        hl_group = priority_highlights[row.priority] or "Normal"
+        if row.done == 1 then
+            hl_group = priority_highlights[5]
+        else
+            hl_group = priority_highlights[row.priority] or "Normal"
+        end
 
         table.insert(todo_table, {text = record, hl = hl_group})
 
