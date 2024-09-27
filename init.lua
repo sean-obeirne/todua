@@ -186,7 +186,7 @@ function M.todua_popup()
         style = "minimal",
         relative = "editor",
         width = math.max(math.min(longest, 80), #commands),
-        height = size + 1,
+        height = math.min(size + 1, 35),
         col = vim.o.columns,
         -- col = 15,
         row = 0,
