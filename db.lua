@@ -3,9 +3,33 @@ local sqlite = require("sqlite")
 local M = {}
 local ORDER_I = 1
 
+local cur_db = nil
+
+-- Prompt the user to select a database
+local function select_database()
+	local databases = vim.fn.globpath("~/.config/nvim/lua/todua/databases", "*.db", false, true)
+    local selected_db = nil
+    for i, full_path in ipairs(databases) do
+        databases[i] = vim.fn.fnamemodify(full_path, ":t")
+		print(i .. ". " .. databases[i])
+    end
+    selected_db = tonumber(vim.fn.input("Pick a database number: "))
+	if not selected_db or selected_db <= 0 or selected_db > #databases then
+		return
+	end
+	-- print(databases[selected_db])
+	return databases[selected_db]
+end
+
+
 function M.init()
-    -- os.remove("todua.db")
-    M.db = sqlite.new("~/.config/nvim/lua/todua/todua.db")
+	cur_db = select_database()
+	if not cur_db then
+		print("No database detected. Exiting...")
+		return nil
+	end
+    -- os.remove(cur_db)
+    M.db = sqlite.new("~/.config/nvim/lua/todua/databases/" .. cur_db)
     if not M.db then
         error("Failed to connect to the database.")
     end
@@ -132,7 +156,9 @@ function M.move_down(id)
 end
 
 function M.select_all()
-    M.init()
+	if not cur_db then
+		M.init(cur_db)
+	end
 
     local select_query = "SELECT * FROM notes;"
     local rows = M.db:eval(select_query)
@@ -151,6 +177,7 @@ function M.select_all()
 end
 
 function M.close()
+	cur_db = nil
     M.db:close()
 end
 
